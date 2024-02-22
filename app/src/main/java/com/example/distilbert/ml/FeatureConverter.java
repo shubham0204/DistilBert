@@ -70,22 +70,22 @@ public final class FeatureConverter {
     tokens.add("[CLS]");
     segmentIds.add(0);
 
-    // For query input.
-    for (String queryToken : queryTokens) {
-      tokens.add(queryToken);
+    // For Text Input.
+    for (int i = 0; i < allDocTokens.size(); i++) {
+      String docToken = allDocTokens.get(i);
+      tokens.add(docToken);
       segmentIds.add(0);
+      tokenToOrigMap.put(tokens.size(), tokenToOrigIndex.get(i));
     }
 
     // For Separation.
     tokens.add("[SEP]");
     segmentIds.add(0);
 
-    // For Text Input.
-    for (int i = 0; i < allDocTokens.size(); i++) {
-      String docToken = allDocTokens.get(i);
-      tokens.add(docToken);
+    // For query input.
+    for (String queryToken : queryTokens) {
+      tokens.add(queryToken);
       segmentIds.add(1);
-      tokenToOrigMap.put(tokens.size(), tokenToOrigIndex.get(i));
     }
 
     // For ending mark.
