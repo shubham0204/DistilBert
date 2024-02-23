@@ -22,6 +22,7 @@ import android.util.Log;
 import com.google.common.base.Joiner;
 
 import org.tensorflow.lite.Interpreter;
+import org.tensorflow.lite.Tensor;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -40,7 +41,7 @@ import java.util.Map;
 /** Interface to load TfLite model and provide predictions. */
 public class QaClient {
   private static final String TAG = "BertDemo";
-  private static final String MODEL_PATH = "model.tflite";
+  private static final String MODEL_PATH = "kaggle_mobilebert_384.tflite";
   private static final String DIC_PATH = "vocab.txt";
 
   private static final int MAX_ANS_LEN = 32;
@@ -48,7 +49,7 @@ public class QaClient {
   private static final int MAX_SEQ_LEN = 384;
   private static final boolean DO_LOWER_CASE = true;
   private static final int PREDICT_ANS_NUM = 5;
-  private static final int NUM_LITE_THREADS = 4;
+  private static final int NUM_LITE_THREADS = 7;
 
   // Need to shift 1 for outputs ([CLS]).
   private static final int OUTPUT_OFFSET = 1;
@@ -130,29 +131,69 @@ public class QaClient {
 
     Log.v(TAG, "Set inputs...");
     int[][] inputIds = new int[1][MAX_SEQ_LEN];
-//    int[][] inputMask = new int[1][MAX_SEQ_LEN];
-//    int[][] segmentIds = new int[1][MAX_SEQ_LEN];
+    int[][] inputMask = new int[1][MAX_SEQ_LEN];
+    int[][] segmentIds = new int[1][MAX_SEQ_LEN];
     float[][] startLogits = new float[1][MAX_SEQ_LEN];
     float[][] endLogits = new float[1][MAX_SEQ_LEN];
 
     for (int j = 0; j < MAX_SEQ_LEN; j++) {
       inputIds[0][j] = feature.inputIds[j];
-//      inputMask[0][j] = feature.inputMask[j];
-//      segmentIds[0][j] = feature.segmentIds[j];
+      inputMask[0][j] = feature.inputMask[j];
+      segmentIds[0][j] = feature.segmentIds[j];
     }
 
-//    Object[] inputs = {inputIds, inputMask, segmentIds};
+    Object[] inputs = { inputIds, inputMask, segmentIds};
+
     Map<Integer, Object> output = new HashMap<>();
-    output.put(0, startLogits);
-    output.put(1, endLogits);
+    // Arrange outputs based on what Netron.app spits out.
+    output.put(0, endLogits);
+    output.put(1, startLogits);
 
     Log.v(TAG, "Run inference...");
-    tflite.runForMultipleInputsOutputs(new Object[] { inputIds }, output);
+    /*Tensor inputTensor0 = tflite.getInputTensor(0);
+    printTensorDump(inputTensor0);
+    Tensor inputTensor1 = tflite.getInputTensor(1);
+    printTensorDump(inputTensor1);
+    Tensor inputTensor2 = tflite.getInputTensor(2);
+    printTensorDump(inputTensor2);
+    // Create output tensor
+    Tensor outputTensor = tflite.getOutputTensor(0);
+    printTensorDump(outputTensor);
+    Tensor outputTensor1 = tflite.getOutputTensor(1);
+    printTensorDump(outputTensor1);*/
+
+    tflite.runForMultipleInputsOutputs(inputs, output);
 
     Log.v(TAG, "Convert answers...");
     List<QaAnswer> answers = getBestAnswers(startLogits[0], endLogits[0], feature);
     Log.v(TAG, "Finish.");
     return answers;
+  }
+
+  private void printTensorDump(Tensor tensor) {
+    Log.d(TAG, "  shape.length: " + tensor.shape().length);
+    int i = 0;
+    int[] var10000 = tensor.shape();
+    for(int var3 = var10000.length; i < var3; ++i) {
+      Log.d(TAG, "    shape[" + i + "]: " + tensor.shape()[i]);
+    }
+
+    Log.d(TAG, "  dataType: " + tensor.dataType());
+    Log.d(TAG, "  name: " + tensor.name());
+    Log.d(TAG, "  numBytes: " + tensor.numBytes());
+    Log.d(TAG, "  index: " + tensor.index());
+    Log.d(TAG, "  numDimensions: " + tensor.numDimensions());
+    Log.d(TAG, "  numElements: " + tensor.numElements());
+    Log.d(TAG, "  shapeSignature.length: " + tensor.shapeSignature().length);
+    String var4 = TAG;
+    StringBuilder var10001 = (new StringBuilder()).append("  quantizationParams.getScale: ");
+    Tensor.QuantizationParams var10002 = tensor.quantizationParams();
+    Log.d(var4, var10001.append(var10002.getScale()).toString());
+    var4 = TAG;
+    var10001 = (new StringBuilder()).append("  quantizationParams.getZeroPoint: ");
+    var10002 = tensor.quantizationParams();
+    Log.d(var4, var10001.append(var10002.getZeroPoint()).toString());
+    Log.d(TAG, "==================================================================");
   }
 
   /** Find the Best N answers & logits from the logits array and input feature. */
