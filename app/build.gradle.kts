@@ -94,9 +94,9 @@ dependencies {
 
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.google.guava:guava:28.1-android")
-    // implementation("org.tensorflow:tensorflow-lite:2.0.0")
-    // implementation("org.tensorflow:tensorflow-lite-select-tf-ops:2.9.0")
-    implementation(files("libs/tensorflow-lite-with-select-tf-ops-0.0.0-nightly.aar"))
+    implementation("org.tensorflow:tensorflow-lite:2.8.0")
+    //implementation("org.tensorflow:tensorflow-lite-select-tf-ops:2.9.0")
+    //implementation(files("libs/tensorflow-lite-with-select-tf-ops-0.0.0-nightly.aar"))
 
     testImplementation("com.google.truth:truth:1.0")
     testImplementation("org.robolectric:robolectric:4.3.1")

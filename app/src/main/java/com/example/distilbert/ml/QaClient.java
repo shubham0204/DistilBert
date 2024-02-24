@@ -41,12 +41,12 @@ import java.util.Map;
 /** Interface to load TfLite model and provide predictions. */
 public class QaClient {
   private static final String TAG = "BertDemo";
-  private static final String MODEL_PATH = "kaggle_mobilebert_384.tflite";
+  private static final String MODEL_PATH = "model_bert_medium_512_quant.tflite";
   private static final String DIC_PATH = "vocab.txt";
 
   private static final int MAX_ANS_LEN = 32;
   private static final int MAX_QUERY_LEN = 64;
-  private static final int MAX_SEQ_LEN = 384;
+  private static final int MAX_SEQ_LEN = 512;
   private static final boolean DO_LOWER_CASE = true;
   private static final int PREDICT_ANS_NUM = 5;
   private static final int NUM_LITE_THREADS = 7;
