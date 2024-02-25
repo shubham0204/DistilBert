@@ -1,1 +1,1 @@
-Android Question Answering application using KerasNLP model with 512 inputs from the [documentation](https://keras.io/api/keras_nlp/models/bert/bert_backbone/).
+Android Question Answering application using KerasNLP model with 512 token inputs from the [documentation](https://keras.io/api/keras_nlp/models/bert/bert_backbone/). You can download the model from [here](https://drive.google.com/file/d/1owZTr38kyf0NLKbviFdyYaf11OU_OWGc/view?usp=sharing) and paste it into the assets folder of the project to work.
