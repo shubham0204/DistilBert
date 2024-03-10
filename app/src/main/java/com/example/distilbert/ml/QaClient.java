@@ -137,9 +137,9 @@ public class QaClient {
     float[][] endLogits = new float[1][MAX_SEQ_LEN];
 
     for (int j = 0; j < MAX_SEQ_LEN; j++) {
-      inputIds[0][j] = feature.inputIds[j];
-      inputMask[0][j] = feature.inputMask[j];
-      segmentIds[0][j] = feature.segmentIds[j];
+      inputIds[0][j] = feature.getInputIds()[j];
+      inputMask[0][j] = feature.getInputMask()[j];
+      segmentIds[0][j] = feature.getSegmentIds()[j];
     }
 
     Object[] inputs = { inputIds, inputMask, segmentIds};
@@ -200,8 +200,8 @@ public class QaClient {
   private synchronized List<QaAnswer> getBestAnswers(
       float[] startLogits, float[] endLogits, Feature feature) {
     // Model uses the closed interval [start, end] for indices.
-    int[] startIndexes = getBestIndex(startLogits, feature.tokenToOrigMap);
-    int[] endIndexes = getBestIndex(endLogits, feature.tokenToOrigMap);
+    int[] startIndexes = getBestIndex(startLogits, feature.getTokenToOrigMap());
+    int[] endIndexes = getBestIndex(endLogits, feature.getTokenToOrigMap());
 
     List<QaAnswer.Pos> origResults = new ArrayList<>();
     for (int start : startIndexes) {
@@ -263,10 +263,10 @@ public class QaClient {
      // Shifted index is: index of logits + offset.
     int shiftedStart = start + OUTPUT_OFFSET;
     int shiftedEnd = end + OUTPUT_OFFSET;
-    int startIndex = feature.tokenToOrigMap.get(shiftedStart);
-    int endIndex = feature.tokenToOrigMap.get(shiftedEnd);
+    int startIndex = feature.getTokenToOrigMap().get(shiftedStart);
+    int endIndex = feature.getTokenToOrigMap().get(shiftedEnd);
     // end + 1 for the closed interval.
-    String ans = SPACE_JOINER.join(feature.origTokens.subList(startIndex, endIndex + 1));
+    String ans = SPACE_JOINER.join(feature.getOrigTokens().subList(startIndex, endIndex + 1));
     return ans;
   }
 }
