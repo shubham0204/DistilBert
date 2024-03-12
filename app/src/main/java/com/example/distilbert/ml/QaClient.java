@@ -226,8 +226,8 @@ public class QaClient {
       }
 
       String convertedText;
-      if (origResults.get(i).start > 0) {
-        convertedText = convertBack(feature, origResults.get(i).start, origResults.get(i).end);
+      if (origResults.get(i).getStart() > 0) {
+        convertedText = convertBack(feature, origResults.get(i).getStart(), origResults.get(i).getEnd());
       } else {
         convertedText = "";
       }

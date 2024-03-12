@@ -37,7 +37,6 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 
 import com.example.distilbert.ml.LoadDatasetClient;
-import com.example.distilbert.ml.QaAnswer;
 import com.example.distilbert.ml.QaClient;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
