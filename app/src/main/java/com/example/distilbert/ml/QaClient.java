@@ -251,7 +251,7 @@ public class QaClient {
 
     int[] indexes = new int[PREDICT_ANS_NUM];
     for (int i = 0; i < PREDICT_ANS_NUM; i++) {
-      indexes[i] = tmpList.get(i).start;
+      indexes[i] = tmpList.get(i).getStart();
     }
 
     return indexes;

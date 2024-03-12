@@ -37,6 +37,7 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 
 import com.example.distilbert.ml.LoadDatasetClient;
+import com.example.distilbert.ml.QaAnswer;
 import com.example.distilbert.ml.QaClient;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
@@ -244,19 +245,19 @@ public class QaActivity extends AppCompatActivity {
   private void presentAnswer(QaAnswer answer) {
     // Highlight answer.
     Spannable spanText = new SpannableString(content);
-    int offset = content.indexOf(answer.text, 0);
+    int offset = content.indexOf(answer.getText(), 0);
     if (offset >= 0) {
       spanText.setSpan(
           new BackgroundColorSpan(getColor(R.color.secondaryColor)),
           offset,
-          offset + answer.text.length(),
+          offset + answer.getText().length(),
           Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
     contentTextView.setText(spanText);
 
     // Use TTS to speak out the answer.
     if (textToSpeech != null) {
-      textToSpeech.speak(answer.text, TextToSpeech.QUEUE_FLUSH, null, answer.text);
+      textToSpeech.speak(answer.getText(), TextToSpeech.QUEUE_FLUSH, null, answer.getText());
     }
   }
 }
