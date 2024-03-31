@@ -28,16 +28,34 @@ import android.view.inputmethod.InputMethodManager
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -46,6 +64,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.example.distilbert.ml.LoadDatasetClient
 import com.example.distilbert.ml.QaAnswer
 import com.example.distilbert.ml.QaClient
@@ -64,6 +86,7 @@ class QaActivity : AppCompatActivity() {
     private val contentState: MutableState<String> = mutableStateOf( "" )
     private val questionState: MutableState<String> = mutableStateOf( "" )
     private val suggestionsState: MutableState<List<String>> = mutableStateOf( listOf() )
+    private val showSuggestionsDialogState: MutableState<Boolean> = mutableStateOf( false )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -100,35 +123,83 @@ class QaActivity : AppCompatActivity() {
         qaClient = QaClient(this)
     }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     private fun ActivityUI() {
         DistilBertTheme {
-            Surface( modifier = Modifier
-                .fillMaxSize()
-                .background(Color.White) ) {
-                Column {
-                    PassageDisplay()
-                    QuestionSuggestions()
-                    QuestionInput()
+            Surface(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+            ) {
+                Scaffold(topBar = {
+                    TopAppBar(
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            titleContentColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        navigationIcon = {
+                            IconButton(onClick = { finish() }) {
+                                Icon(
+                                    imageVector = Icons.Filled.ArrowBack,
+                                    contentDescription = "Navigate Back"
+                                )
+                            }
+                        },
+                        title = {
+                            val title by remember{ titleState }
+                            Text(
+                                title,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        })
+                }) { paddingValues ->
+                    Column(modifier = Modifier.padding(paddingValues)) {
+                        PassageDisplay()
+                        QuestionSuggestionsDialog()
+                        QuestionInput()
+                    }
                 }
+
+
             }
         }
     }
 
     @Composable
     private fun QuestionInput() {
-        var question by remember{ questionState }
-        var askButtonEnabled by remember{ mutableStateOf( false ) }
-        Row {
+        var question by remember { questionState }
+        var askButtonEnabled by remember { mutableStateOf(false) }
+        Row(modifier = Modifier.padding(8.dp)) {
             TextField(
                 value = question,
                 onValueChange = {
                     question = it
                     askButtonEnabled = question.trim().isNotEmpty()
-                }
+                },
+                trailingIcon = {
+                    IconButton(onClick = { showSuggestionsDialogState.value = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = "Show question suggestions"
+                        )
+                    }
+                },
+                label = { Text(text = "Type your question here...") },
+                colors = TextFieldDefaults.colors(
+                    unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent
+                ),
+                shape = RoundedCornerShape(16.dp),
+                singleLine = true
             )
+            Spacer(modifier = Modifier.width(4.dp))
             Button(
-                onClick = { answerQuestion( question ) } ,
+                onClick = { answerQuestion(question) },
                 enabled = askButtonEnabled
             ) {
                 Icon(imageVector = Icons.Default.ArrowForward, contentDescription = "Ask Question")
@@ -137,13 +208,41 @@ class QaActivity : AppCompatActivity() {
     }
 
     @Composable
-    private fun QuestionSuggestions() {
+    private fun QuestionSuggestionsDialog() {
         val suggestions by remember{ suggestionsState }
-        Column {
-            Text(text = "You might want to ask ..." )
-            Row {
-                suggestions.forEach {
-                    Text(text = it)
+        var showDialog by remember{ showSuggestionsDialogState }
+        if ( showDialog ) {
+            Dialog(
+                onDismissRequest = { showDialog = false }
+            ) {
+                Column( modifier = Modifier
+                    .background(Color.White)
+                    .padding(24.dp) ) {
+                    Text(
+                        text = "You might want to ask ..." ,
+                        style = MaterialTheme.typography.titleMedium
+                        )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyColumn( verticalArrangement = Arrangement.spacedBy( 8.dp ) ) {
+                        items( suggestions ) {
+                            Surface(
+                                modifier = Modifier
+                                    .background(
+                                        MaterialTheme.colorScheme.primaryContainer,
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .padding(8.dp)
+                            ) {
+                                Text(
+                                    text = it ,
+                                    fontSize = 12.sp,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primaryContainer)
+                                )
+                            }
+
+                        }
+                    }
                 }
             }
         }
@@ -151,11 +250,13 @@ class QaActivity : AppCompatActivity() {
 
     @Composable
     private fun PassageDisplay() {
-        val title by remember{ titleState }
         val content by remember{ contentState }
         Column {
-            Text(text = title )
-            Text(text = content)
+            Text(
+                text = content ,
+                fontSize = 12.sp,
+                modifier = Modifier.padding( 16.dp )
+            )
         }
     }
 
