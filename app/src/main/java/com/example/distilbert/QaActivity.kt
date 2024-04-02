@@ -74,25 +74,23 @@ import com.example.distilbert.ml.QaClient
 import com.example.distilbert.ui.theme.DistilBertTheme
 import java.util.Locale
 
-/** Activity for doing Q&A on a specific dataset  */
+/** Activity for doing Q&A on a specific dataset */
 class QaActivity : AppCompatActivity() {
 
     private var textToSpeech: TextToSpeech? = null
     private var questionAnswered = false
-    private var handler: Handler? = null
-    private var qaClient: QaClient? = null
+    private lateinit var handler: Handler
+    private lateinit var qaClient: QaClient
 
-    private val titleState: MutableState<String> = mutableStateOf( "" )
-    private val contentState: MutableState<String> = mutableStateOf( "" )
-    private val questionState: MutableState<String> = mutableStateOf( "" )
-    private val suggestionsState: MutableState<List<String>> = mutableStateOf( listOf() )
-    private val showSuggestionsDialogState: MutableState<Boolean> = mutableStateOf( false )
+    private val titleState: MutableState<String> = mutableStateOf("")
+    private val contentState: MutableState<String> = mutableStateOf("")
+    private val questionState: MutableState<String> = mutableStateOf("")
+    private val suggestionsState: MutableState<List<String>> = mutableStateOf(listOf())
+    private val showSuggestionsDialogState: MutableState<Boolean> = mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            ActivityUI()
-        }
+        setContent { ActivityUI() }
 
         // Get content of the selected dataset.
         val datasetPosition = intent.getIntExtra(DATASET_POSITION_KEY, -1)
@@ -106,15 +104,6 @@ class QaActivity : AppCompatActivity() {
 
         // Setup question suggestion list.
         suggestionsState.value = datasetClient.getQuestions(datasetPosition).toList()
-        /*
-        val questionSuggestionsView = findViewById<RecyclerView>(R.id.suggestion_list)
-        val adapter = QuestionAdapter(this, datasetClient.getQuestions(datasetPosition))
-        adapter.setOnQuestionSelectListener { question: String -> answerQuestion(question) }
-        questionSuggestionsView.setAdapter(adapter)
-        val layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
-        questionSuggestionsView.setLayoutManager(layoutManager)
-
-         */
 
         // Setup QA client to and background thread to run inference.
         val handlerThread = HandlerThread("QAClient")
@@ -127,42 +116,36 @@ class QaActivity : AppCompatActivity() {
     @Composable
     private fun ActivityUI() {
         DistilBertTheme {
-            Surface(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.White)
-            ) {
-                Scaffold(topBar = {
-                    TopAppBar(
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            titleContentColor = MaterialTheme.colorScheme.primary,
-                            ),
-                        navigationIcon = {
-                            IconButton(onClick = { finish() }) {
-                                Icon(
-                                    imageVector = Icons.Filled.ArrowBack,
-                                    contentDescription = "Navigate Back"
-                                )
+            Surface(modifier = Modifier.fillMaxSize().background(Color.White)) {
+                Scaffold(
+                    topBar = {
+                        TopAppBar(
+                            colors =
+                                TopAppBarDefaults.topAppBarColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    titleContentColor = MaterialTheme.colorScheme.primary,
+                                ),
+                            navigationIcon = {
+                                IconButton(onClick = { finish() }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.ArrowBack,
+                                        contentDescription = "Navigate Back"
+                                    )
+                                }
+                            },
+                            title = {
+                                val title by remember { titleState }
+                                Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
-                        },
-                        title = {
-                            val title by remember{ titleState }
-                            Text(
-                                title,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        })
-                }) { paddingValues ->
+                        )
+                    }
+                ) { paddingValues ->
                     Column(modifier = Modifier.padding(paddingValues)) {
                         PassageDisplay()
                         QuestionSuggestionsDialog()
                         QuestionInput()
                     }
                 }
-
-
             }
         }
     }
@@ -186,22 +169,20 @@ class QaActivity : AppCompatActivity() {
                         )
                     }
                 },
-                label = { Text(text = "Type your question here...") },
-                colors = TextFieldDefaults.colors(
-                    unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                    focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    disabledIndicatorColor = Color.Transparent
-                ),
+                placeholder = { Text(text = "Type your question here...") },
+                colors =
+                    TextFieldDefaults.colors(
+                        unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent
+                    ),
                 shape = RoundedCornerShape(16.dp),
                 singleLine = true
             )
             Spacer(modifier = Modifier.width(4.dp))
-            Button(
-                onClick = { answerQuestion(question) },
-                enabled = askButtonEnabled
-            ) {
+            Button(onClick = { answerQuestion(question) }, enabled = askButtonEnabled) {
                 Icon(imageVector = Icons.Default.ArrowForward, contentDescription = "Ask Question")
             }
         }
@@ -209,38 +190,35 @@ class QaActivity : AppCompatActivity() {
 
     @Composable
     private fun QuestionSuggestionsDialog() {
-        val suggestions by remember{ suggestionsState }
-        var showDialog by remember{ showSuggestionsDialogState }
-        if ( showDialog ) {
-            Dialog(
-                onDismissRequest = { showDialog = false }
-            ) {
-                Column( modifier = Modifier
-                    .background(Color.White)
-                    .padding(24.dp) ) {
+        val suggestions by remember { suggestionsState }
+        var showDialog by remember { showSuggestionsDialogState }
+        if (showDialog) {
+            Dialog(onDismissRequest = { showDialog = false }) {
+                Column(modifier = Modifier.background(Color.White).padding(24.dp)) {
                     Text(
-                        text = "You might want to ask ..." ,
+                        text = "You might want to ask ...",
                         style = MaterialTheme.typography.titleMedium
-                        )
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
-                    LazyColumn( verticalArrangement = Arrangement.spacedBy( 8.dp ) ) {
-                        items( suggestions ) {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(suggestions) {
                             Surface(
-                                modifier = Modifier
-                                    .background(
-                                        MaterialTheme.colorScheme.primaryContainer,
-                                        RoundedCornerShape(8.dp)
-                                    )
-                                    .padding(8.dp)
+                                modifier =
+                                    Modifier.background(
+                                            MaterialTheme.colorScheme.primaryContainer,
+                                            RoundedCornerShape(8.dp)
+                                        )
+                                        .padding(8.dp)
                             ) {
                                 Text(
-                                    text = it ,
+                                    text = it,
                                     fontSize = 12.sp,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primaryContainer)
+                                    modifier =
+                                        Modifier.fillMaxWidth()
+                                            .background(MaterialTheme.colorScheme.primaryContainer)
                                 )
                             }
-
                         }
                     }
                 }
@@ -250,38 +228,31 @@ class QaActivity : AppCompatActivity() {
 
     @Composable
     private fun PassageDisplay() {
-        val content by remember{ contentState }
-        Column {
-            Text(
-                text = content ,
-                fontSize = 12.sp,
-                modifier = Modifier.padding( 16.dp )
-            )
-        }
+        val content by remember { contentState }
+        Column { Text(text = content, fontSize = 12.sp, modifier = Modifier.padding(16.dp)) }
     }
 
     override fun onStart() {
         Log.v(TAG, "onStart")
         super.onStart()
-        handler!!.post {
-            qaClient!!.loadModel()
-            qaClient!!.loadDictionary()
+        handler.post {
+            qaClient.loadModel()
+            qaClient.loadDictionary()
         }
-        textToSpeech = TextToSpeech(
-            this
-        ) { status: Int ->
-            if (status == TextToSpeech.SUCCESS) {
-                textToSpeech!!.setLanguage(Locale.US)
-            } else {
-                textToSpeech = null
+        textToSpeech =
+            TextToSpeech(this) { status: Int ->
+                if (status == TextToSpeech.SUCCESS) {
+                    textToSpeech!!.setLanguage(Locale.US)
+                } else {
+                    textToSpeech = null
+                }
             }
-        }
     }
 
     override fun onStop() {
         Log.v(TAG, "onStop")
         super.onStop()
-        handler!!.post { qaClient!!.unload() }
+        handler.post { qaClient.unload() }
         if (textToSpeech != null) {
             textToSpeech!!.stop()
             textToSpeech!!.shutdown()
@@ -289,8 +260,7 @@ class QaActivity : AppCompatActivity() {
     }
 
     private fun answerQuestion(question: String) {
-        var question = question
-        question = question.trim { it <= ' ' }
+        var question = question.trim { it <= ' ' }
         if (question.isEmpty()) {
             questionState.value = question
             return
@@ -304,7 +274,7 @@ class QaActivity : AppCompatActivity() {
         questionState.value = question
 
         // Delete all pending tasks.
-        handler!!.removeCallbacksAndMessages(null)
+        handler.removeCallbacksAndMessages(null)
 
         // Hide keyboard and dismiss focus on text edit.
         val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
@@ -316,9 +286,9 @@ class QaActivity : AppCompatActivity() {
         questionAnswered = false
 
         // Run TF Lite model to get the answer.
-        handler!!.post {
+        handler.post {
             val beforeTime = System.currentTimeMillis()
-            val answers = qaClient!!.predict( question , contentState.value)
+            val answers = qaClient.predict(question, contentState.value)
             val afterTime = System.currentTimeMillis()
             val totalSeconds = (afterTime - beforeTime) / 1000.0
             if (answers.isNotEmpty()) {
@@ -362,6 +332,7 @@ class QaActivity : AppCompatActivity() {
         private const val DATASET_POSITION_KEY = "DATASET_POSITION"
         private const val TAG = "QaActivity"
         private const val DISPLAY_RUNNING_TIME = false
+
         fun newInstance(context: Context?, datasetPosition: Int): Intent {
             val intent = Intent(context, QaActivity::class.java)
             intent.putExtra(DATASET_POSITION_KEY, datasetPosition)

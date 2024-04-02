@@ -41,16 +41,11 @@ class LoadDatasetClient(private val context: Context) {
         private const val TAG = "BertAppDemo"
         private const val JSON_DIR = "qa.json"
         private const val DIC_DIR = "vocab.txt"
-
     }
 
     private fun loadJson() {
         try {
-            val reader = JsonReader(
-                InputStreamReader(
-                    context.assets.open(JSON_DIR)
-                )
-            )
+            val reader = JsonReader(InputStreamReader(context.assets.open(JSON_DIR)))
             val map =
                 Gson().fromJson<HashMap<String, List<List<String>>>>(reader, HashMap::class.java)
             val jsonTitles = map["titles"] ?: emptyList()
@@ -59,9 +54,7 @@ class LoadDatasetClient(private val context: Context) {
             titles = jsonTitles.map { it[0] }.toTypedArray()
             contents = jsonContents.map { it[0] }.toTypedArray()
             val questionsList = ArrayList<Array<String>>()
-            jsonQuestions.forEach { item ->
-                questionsList.add(item.toTypedArray<String>())
-            }
+            jsonQuestions.forEach { item -> questionsList.add(item.toTypedArray<String>()) }
             questions = questionsList.toTypedArray()
         } catch (ex: IOException) {
             Log.e(TAG, ex.toString())
@@ -93,5 +86,4 @@ class LoadDatasetClient(private val context: Context) {
         }
         return dic
     }
-
 }

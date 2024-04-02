@@ -5,7 +5,7 @@ data class Feature(
     val inputMask: IntArray,
     val segmentIds: IntArray,
     val origTokens: List<String>,
-    val tokenToOrigMap: Map<Int,Int>
+    val tokenToOrigMap: Map<Int, Int>
 ) {
 
     constructor(
@@ -13,13 +13,12 @@ data class Feature(
         inputMask: List<Int>,
         segmentIds: List<Int>,
         origTokens: List<String>,
-        tokenToOrigMap: Map<Int,Int>
+        tokenToOrigMap: Map<Int, Int>
     ) : this(
-            inputIds.toIntArray() ,
-            inputMask.toIntArray() ,
-            segmentIds.toIntArray() ,
-            origTokens ,
-            tokenToOrigMap
-        )
-
+        inputIds.toIntArray(),
+        inputMask.toIntArray(),
+        segmentIds.toIntArray(),
+        origTokens,
+        tokenToOrigMap
+    )
 }

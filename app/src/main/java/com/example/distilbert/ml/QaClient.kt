@@ -29,7 +29,7 @@ import java.nio.ByteBuffer
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 
-/** Interface to load TfLite model and provide predictions.  */
+/** Interface to load TfLite model and provide predictions. */
 class QaClient(private val context: Context) {
 
     private val TAG = "BertDemo"
@@ -45,18 +45,14 @@ class QaClient(private val context: Context) {
     private val OUTPUT_OFFSET = 1
     private val SPACE_JOINER = Joiner.on(" ")
 
-    /** Convert the answer back to original text form.  */
+    /** Convert the answer back to original text form. */
     private val dic: MutableMap<String, Int> = HashMap()
     private val featureConverter: FeatureConverter =
         FeatureConverter(dic, DO_LOWER_CASE, MAX_QUERY_LEN, MAX_SEQ_LEN)
     private var tflite: Interpreter? = null
 
     @WorkerThread
-    private fun convertBack(
-        feature: Feature,
-        start: Int,
-        end: Int
-    ): String {
+    private fun convertBack(feature: Feature, start: Int, end: Int): String {
         // Shifted index is: index of logits + offset.
         val shiftedStart = start + OUTPUT_OFFSET
         val shiftedEnd = end + OUTPUT_OFFSET
@@ -98,7 +94,7 @@ class QaClient(private val context: Context) {
         dic.clear()
     }
 
-    /** Load tflite model from assets.  */
+    /** Load tflite model from assets. */
     @Throws(IOException::class)
     fun loadModelFile(assetManager: AssetManager): MappedByteBuffer {
         assetManager.openFd(MODEL_PATH).use { fileDescriptor ->
@@ -111,7 +107,7 @@ class QaClient(private val context: Context) {
         }
     }
 
-    /** Load dictionary from assets.  */
+    /** Load dictionary from assets. */
     @Throws(IOException::class)
     fun loadDictionaryFile(assetManager: AssetManager) {
         assetManager.open(DIC_PATH).use { ins ->
@@ -154,16 +150,19 @@ class QaClient(private val context: Context) {
         output[1] = startLogits
         Log.v(TAG, "Run inference...")
         /*Tensor inputTensor0 = tflite.getInputTensor(0);
-    printTensorDump(inputTensor0);
-    Tensor inputTensor1 = tflite.getInputTensor(1);
-    printTensorDump(inputTensor1);
-    Tensor inputTensor2 = tflite.getInputTensor(2);
-    printTensorDump(inputTensor2);
-    // Create output tensor
-    Tensor outputTensor = tflite.getOutputTensor(0);
-    printTensorDump(outputTensor);
-    Tensor outputTensor1 = tflite.getOutputTensor(1);
-    printTensorDump(outputTensor1);*/tflite!!.runForMultipleInputsOutputs(inputs, output)
+        printTensorDump(inputTensor0);
+        Tensor inputTensor1 = tflite.getInputTensor(1);
+        printTensorDump(inputTensor1);
+        Tensor inputTensor2 = tflite.getInputTensor(2);
+        printTensorDump(inputTensor2);
+        // Create output tensor
+        Tensor outputTensor = tflite.getOutputTensor(0);
+        printTensorDump(outputTensor);
+        Tensor outputTensor1 = tflite.getOutputTensor(1);
+        printTensorDump(outputTensor1);*/ tflite!!.runForMultipleInputsOutputs(
+            inputs,
+            output
+        )
         Log.v(TAG, "Convert answers...")
         val answers = getBestAnswers(startLogits[0], endLogits[0], feature)
         Log.v(TAG, "Finish.")
@@ -197,10 +196,12 @@ class QaClient(private val context: Context) {
         Log.d(TAG, "==================================================================")
     }
 
-    /** Find the Best N answers & logits from the logits array and input feature.  */
+    /** Find the Best N answers & logits from the logits array and input feature. */
     @Synchronized
     private fun getBestAnswers(
-        startLogits: FloatArray, endLogits: FloatArray, feature: Feature
+        startLogits: FloatArray,
+        endLogits: FloatArray,
+        feature: Feature
     ): List<QaAnswer> {
         // Model uses the closed interval [start, end] for indices.
         val startIndexes = getBestIndex(startLogits, feature.tokenToOrigMap)
@@ -224,18 +225,19 @@ class QaClient(private val context: Context) {
             if (i >= PREDICT_ANS_NUM) {
                 break
             }
-            val convertedText: String = if (origResults[i].start > 0) {
-                convertBack(feature, origResults[i].start, origResults[i].end)
-            } else {
-                ""
-            }
+            val convertedText: String =
+                if (origResults[i].start > 0) {
+                    convertBack(feature, origResults[i].start, origResults[i].end)
+                } else {
+                    ""
+                }
             val ans = QaAnswer(convertedText, origResults[i])
             answers.add(ans)
         }
         return answers
     }
 
-    /** Get the n-best logits from a list of all the logits.  */
+    /** Get the n-best logits from a list of all the logits. */
     @WorkerThread
     @Synchronized
     private fun getBestIndex(logits: FloatArray, tokenToOrigMap: Map<Int, Int>): IntArray {
@@ -252,5 +254,4 @@ class QaClient(private val context: Context) {
         }
         return indexes
     }
-
 }

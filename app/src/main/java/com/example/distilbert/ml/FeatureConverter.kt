@@ -17,9 +17,12 @@ package com.example.distilbert.ml
 import com.example.distilbert.tokenization.FullTokenizer
 import java.util.Collections
 
-/** Convert String to features that can be fed into BERT model.  */
+/** Convert String to features that can be fed into BERT model. */
 class FeatureConverter(
-    inputDic: Map<String, Int>, doLowerCase: Boolean, maxQueryLen: Int, maxSeqLen: Int
+    inputDic: Map<String, Int>,
+    doLowerCase: Boolean,
+    maxQueryLen: Int,
+    maxSeqLen: Int
 ) {
     private val tokenizer: FullTokenizer
     private val maxQueryLen: Int
@@ -36,10 +39,8 @@ class FeatureConverter(
         if (queryTokens.size > maxQueryLen) {
             queryTokens = queryTokens.subList(0, maxQueryLen)
         }
-        val origTokens = context
-                .trim { it <= ' ' }
-                .split("\\s+".toRegex())
-                .dropLastWhile { it.isEmpty() }
+        val origTokens =
+            context.trim { it <= ' ' }.split("\\s+".toRegex()).dropLastWhile { it.isEmpty() }
         val tokenToOrigIndex = ArrayList<Int>()
         var allDocTokens = ArrayList<String>()
 

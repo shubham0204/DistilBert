@@ -56,8 +56,8 @@ import com.example.distilbert.ui.theme.DistilBertTheme
 /**
  * An activity representing a list of Datasets. This activity has different presentations for
  * handset and tablet-size devices. On handsets, the activity presents a list of items, which when
- * touched, lead to a [QaActivity] representing item details. On tablets, the activity
- * presents the list of items and item details side-by-side using two vertical panes.
+ * touched, lead to a [QaActivity] representing item details. On tablets, the activity presents the
+ * list of items and item details side-by-side using two vertical panes.
  */
 class DatasetListActivity : ComponentActivity() {
 
@@ -66,30 +66,26 @@ class DatasetListActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setContent {
-            ActivityUI()
-        }
-
+        setContent { ActivityUI() }
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     private fun ActivityUI() {
         DistilBertTheme {
-            Surface(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.White)
-            ) {
-
-                Scaffold(topBar = {
-                    TopAppBar(colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        titleContentColor = MaterialTheme.colorScheme.primary,
-                    ), title = {
-                        Text("Question Answering")
-                    })
-                }) { paddingValues ->
+            Surface(modifier = Modifier.fillMaxSize().background(Color.White)) {
+                Scaffold(
+                    topBar = {
+                        TopAppBar(
+                            colors =
+                                TopAppBarDefaults.topAppBarColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    titleContentColor = MaterialTheme.colorScheme.primary,
+                                ),
+                            title = { Text("Question Answering") }
+                        )
+                    }
+                ) { paddingValues ->
                     DocumentsList(modifier = Modifier.padding(paddingValues))
                 }
             }
@@ -109,19 +105,20 @@ class DatasetListActivity : ComponentActivity() {
                 itemsIndexed(docs) { index, item ->
                     Text(
                         text = item,
-                        modifier = Modifier
-                            .clickable {
-                                startActivity(QaActivity.newInstance(context, index))
-                            }
-                            .padding(16.dp)
-                            .fillMaxWidth()
+                        modifier =
+                            Modifier.clickable {
+                                    startActivity(QaActivity.newInstance(context, index))
+                                }
+                                .padding(16.dp)
+                                .fillMaxWidth()
                     )
                 }
             }
-            Row( modifier = Modifier
-                .background(MaterialTheme.colorScheme.tertiary)
-                .padding(24.dp)
-                .fillMaxWidth()
+            Row(
+                modifier =
+                    Modifier.background(MaterialTheme.colorScheme.tertiary)
+                        .padding(24.dp)
+                        .fillMaxWidth()
             ) {
                 Text(
                     text = "Select a passage to continue",
@@ -138,6 +135,4 @@ class DatasetListActivity : ComponentActivity() {
             }
         }
     }
-
 }
-
