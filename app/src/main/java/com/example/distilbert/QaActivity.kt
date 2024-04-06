@@ -20,14 +20,11 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
 import android.speech.tts.TextToSpeech
-import android.text.Spannable
-import android.text.SpannableString
-import android.text.style.BackgroundColorSpan
 import android.util.Log
 import android.view.inputmethod.InputMethodManager
 import androidx.activity.compose.setContent
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -62,20 +59,28 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.distilbert.ml.LoadDatasetClient
 import com.example.distilbert.ml.QaAnswer
 import com.example.distilbert.ml.QaClient
+import com.example.distilbert.ui.components.AppProgressDialog
+import com.example.distilbert.ui.components.hideProgressDialog
+import com.example.distilbert.ui.components.showProgressDialog
 import com.example.distilbert.ui.theme.DistilBertTheme
 import java.util.Locale
 
 /** Activity for doing Q&A on a specific dataset */
-class QaActivity : AppCompatActivity() {
+class QaActivity : androidx.activity.ComponentActivity() {
 
     private var textToSpeech: TextToSpeech? = null
     private var questionAnswered = false
@@ -83,7 +88,7 @@ class QaActivity : AppCompatActivity() {
     private lateinit var qaClient: QaClient
 
     private val titleState: MutableState<String> = mutableStateOf("")
-    private val contentState: MutableState<String> = mutableStateOf("")
+    private val contentState: MutableState<AnnotatedString> = mutableStateOf(AnnotatedString(""))
     private val questionState: MutableState<String> = mutableStateOf("")
     private val suggestionsState: MutableState<List<String>> = mutableStateOf(listOf())
     private val showSuggestionsDialogState: MutableState<Boolean> = mutableStateOf(false)
@@ -100,7 +105,7 @@ class QaActivity : AppCompatActivity() {
         titleState.value = datasetClient.titles[datasetPosition]
 
         // Show the text content of the selected dataset.
-        contentState.value = datasetClient.getContent(datasetPosition)
+        contentState.value = AnnotatedString(datasetClient.getContent(datasetPosition))
 
         // Setup question suggestion list.
         suggestionsState.value = datasetClient.getQuestions(datasetPosition).toList()
@@ -142,8 +147,10 @@ class QaActivity : AppCompatActivity() {
                 ) { paddingValues ->
                     Column(modifier = Modifier.padding(paddingValues)) {
                         PassageDisplay()
-                        QuestionSuggestionsDialog()
+                        Spacer(modifier = Modifier.weight(1f))
                         QuestionInput()
+                        QuestionSuggestionsDialog()
+                        AppProgressDialog()
                     }
                 }
             }
@@ -154,9 +161,10 @@ class QaActivity : AppCompatActivity() {
     private fun QuestionInput() {
         var question by remember { questionState }
         var askButtonEnabled by remember { mutableStateOf(false) }
-        Row(modifier = Modifier.padding(8.dp)) {
+        Row(modifier = Modifier.padding(8.dp) , verticalAlignment = Alignment.CenterVertically ) {
             TextField(
                 value = question,
+                modifier = Modifier.weight(1f),
                 onValueChange = {
                     question = it
                     askButtonEnabled = question.trim().isNotEmpty()
@@ -179,13 +187,18 @@ class QaActivity : AppCompatActivity() {
                         disabledIndicatorColor = Color.Transparent
                     ),
                 shape = RoundedCornerShape(16.dp),
-                singleLine = true
             )
             Spacer(modifier = Modifier.width(4.dp))
             Button(onClick = { answerQuestion(question) }, enabled = askButtonEnabled) {
                 Icon(imageVector = Icons.Default.ArrowForward, contentDescription = "Ask Question")
             }
         }
+    }
+
+    @Composable
+    private fun PassageDisplay() {
+        val content by remember { contentState }
+        Column { Text(text = content, fontSize = 12.sp, modifier = Modifier.padding(16.dp)) }
     }
 
     @Composable
@@ -209,6 +222,10 @@ class QaActivity : AppCompatActivity() {
                                             RoundedCornerShape(8.dp)
                                         )
                                         .padding(8.dp)
+                                        .clickable {
+                                            answerQuestion(it)
+                                            showSuggestionsDialogState.value = false
+                                        }
                             ) {
                                 Text(
                                     text = it,
@@ -224,12 +241,6 @@ class QaActivity : AppCompatActivity() {
                 }
             }
         }
-    }
-
-    @Composable
-    private fun PassageDisplay() {
-        val content by remember { contentState }
-        Column { Text(text = content, fontSize = 12.sp, modifier = Modifier.padding(16.dp)) }
     }
 
     override fun onStart() {
@@ -287,9 +298,11 @@ class QaActivity : AppCompatActivity() {
 
         // Run TF Lite model to get the answer.
         handler.post {
+            showProgressDialog()
             val beforeTime = System.currentTimeMillis()
-            val answers = qaClient.predict(question, contentState.value)
+            val answers = qaClient.predict(question, contentState.value.toString())
             val afterTime = System.currentTimeMillis()
+            hideProgressDialog()
             val totalSeconds = (afterTime - beforeTime) / 1000.0
             if (answers.isNotEmpty()) {
                 // Get the top answer
@@ -310,17 +323,16 @@ class QaActivity : AppCompatActivity() {
 
     private fun presentAnswer(answer: QaAnswer) {
         // Highlight answer.
-        val spanText: Spannable = SpannableString(contentState.value)
         val offset = contentState.value.indexOf(answer.text, 0)
         if (offset >= 0) {
-            spanText.setSpan(
-                BackgroundColorSpan(getColor(R.color.secondaryColor)),
-                offset,
-                offset + answer.text.length,
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
+            contentState.value = buildAnnotatedString {
+                append(contentState.value.substring(0, offset))
+                withStyle(SpanStyle(Color.Blue)) {
+                    append(contentState.value.substring(offset, offset + answer.text.length))
+                }
+                append(contentState.value.substring(offset + answer.text.length))
+            }
         }
-        contentState.value = spanText.toString()
 
         // Use TTS to speak out the answer.
         if (textToSpeech != null) {
